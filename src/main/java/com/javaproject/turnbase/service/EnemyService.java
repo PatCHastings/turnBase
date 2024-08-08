@@ -39,6 +39,8 @@ public class EnemyService {
             enemy.setCharisma(monster.getCharisma());
             enemy.setChallengeRating(monster.getChallengeRating());
             enemy.setSpecialAbilities(monster.getSpecialAbilities());
+            enemy.setActions(monster.getActions());
+
             return enemyRepository.save(enemy);
         }
         throw new IllegalArgumentException("Monster not found with index: " + monsterIndex);

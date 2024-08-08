@@ -19,7 +19,6 @@ public class Monster extends Enemy {
     private String size;
     private String type;
     private String alignment;
-    private int armorClass;
     private String speed;
     private int strength;
     private int dexterity;
@@ -29,6 +28,10 @@ public class Monster extends Enemy {
     private int charisma;
     private int challengeRating;
     private String url;
+
+    // dynamic fields
+    @ElementCollection
+    private List<ArmorClass> armorClass;
 
     @Lob
     @ElementCollection
@@ -98,11 +101,11 @@ public class Monster extends Enemy {
         this.alignment = alignment;
     }
 
-    public int getArmorClass() {
+    public List<ArmorClass> getArmorClass() {
         return armorClass;
     }
 
-    public void setArmorClass(int armorClass) {
+    public void setArmorClass(List<ArmorClass> armorClass) {
         this.armorClass = armorClass;
     }
 

@@ -21,7 +21,6 @@ public class Enemy {
     private String size;
     private String type;
     private String alignment;
-    private int armorClass;
     private String speed;
     private int strength;
     private int dexterity;
@@ -31,9 +30,44 @@ public class Enemy {
     private int charisma;
     private int challengeRating;
 
+    // dynamic fields
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Action> actions;
+
+    @ElementCollection
+    private List<ArmorClass> armorClass;
+
     @Lob
     @ElementCollection
     private List<SpecialAbility> specialAbilities;
+
+
+    // sub-classes
+
+    @Embeddable
+    public static class ArmorClass {
+        private String type;
+        private int armorValue;
+
+        //Getters Setters
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public int getValue() {
+            return armorValue;
+        }
+
+        public void setValue(int value) {
+            this.armorValue = value;
+        }
+    }
 
     @Embeddable
     public static class SpecialAbility {
@@ -118,14 +152,6 @@ public class Enemy {
         this.alignment = alignment;
     }
 
-    public int getArmorClass() {
-        return armorClass;
-    }
-
-    public void setArmorClass(int armorClass) {
-        this.armorClass = armorClass;
-    }
-
     public String getSpeed() {
         return speed;
     }
@@ -197,4 +223,21 @@ public class Enemy {
     public void setSpecialAbilities(List<SpecialAbility> specialAbilities) {
         this.specialAbilities = specialAbilities;
     }
+
+    public List<ArmorClass> getArmorClass() {
+        return armorClass;
+    }
+
+    public void setArmorClass(List<ArmorClass> armorClass) {
+        this.armorClass = armorClass;
+    }
+
+    public List<Action> getActions() {
+        return actions;
+    }
+
+    public void setActions(List<Action> actions) {
+        this.actions = actions;
+    }
+
 }
