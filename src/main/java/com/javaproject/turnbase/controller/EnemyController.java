@@ -57,6 +57,7 @@ public class EnemyController {
             enemy.setWisdom(enemyDetails.getWisdom());
             enemy.setCharisma(enemyDetails.getCharisma());
             enemy.setChallengeRating(enemyDetails.getChallengeRating());
+            enemy.setSpecialAbilities(enemyDetails.getSpecialAbilities());
             return enemyRepository.save(enemy);
         } else {
             return null;

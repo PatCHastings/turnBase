@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Entity
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 @NoArgsConstructor
@@ -29,7 +31,36 @@ public class Enemy {
     private int charisma;
     private int challengeRating;
 
+    @Lob
+    @ElementCollection
+    private List<SpecialAbility> specialAbilities;
+
+    @Embeddable
+    public static class SpecialAbility {
+        private String name;
+        @Lob
+        private String desc;
+
+        // Getters and setters
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getDesc() {
+            return desc;
+        }
+
+        public void setDesc(String desc) {
+            this.desc = desc;
+        }
+    }
+
     // Getters and Setters
+
 
     public Long getId() {
         return id;
@@ -157,5 +188,13 @@ public class Enemy {
 
     public void setChallengeRating(int challengeRating) {
         this.challengeRating = challengeRating;
+    }
+
+    public List<SpecialAbility> getSpecialAbilities() {
+        return specialAbilities;
+    }
+
+    public void setSpecialAbilities(List<SpecialAbility> specialAbilities) {
+        this.specialAbilities = specialAbilities;
     }
 }

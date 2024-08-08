@@ -34,6 +34,11 @@ public class MonsterController {
         return monsterService.getMonsterDetails("/api/monsters/" + index);
     }
 
+    @GetMapping("/raw/{index}")
+    public String getMonsterDetailsRaw(@PathVariable String index) {
+        return monsterService.getMonsterDetails(index);
+    }
+
     @PostMapping
     public Monster saveMonster(@RequestBody Monster monster) {
         return monsterService.saveMonster(monster);

@@ -1,10 +1,12 @@
 package com.javaproject.turnbase.entity;
 
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.persistence.Lob;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -28,6 +30,18 @@ public class Monster extends Enemy {
     private int challengeRating;
     private String url;
 
+    @Lob
+    @ElementCollection
+    private List<SpecialAbility> specialAbilities;
+
+    @Override
+    public List<SpecialAbility> getSpecialAbilities() {
+        return specialAbilities;
+    }
+    @Override
+    public void setSpecialAbilities(List<SpecialAbility> specialAbilities) {
+        this.specialAbilities = specialAbilities;
+    }
 
     public String getIndex() {
         return index;
