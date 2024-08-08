@@ -1,62 +1,87 @@
 package com.javaproject.turnbase.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
 @Entity
+@NoArgsConstructor
+@AllArgsConstructor
 public class Player {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String userName;
-    private String characterClass;
+    private String name;
     private int health;
+    private int level;
+    private int constitution;
+    private int constitutionModifier;
 
-    public Player() {
-    }
+    @ManyToOne
+    @JoinColumn(name = "class_index")
+    @JsonBackReference
+    private Class characterClass;
 
-    public Player(Long id, String userName, String characterClass, int health) {
-        this.id = id;
-        this.userName = userName;
-        this.characterClass = characterClass;
-        this.health = health;
-    }
 
+
+
+
+
+    // Getters and setters
     public Long getId() {
         return id;
     }
+
     public void setId(Long id) {
         this.id = id;
     }
 
-    public String getUserName() {
-        return userName;
-    }
-    public void setUserName(String userName) {
-        this.userName = userName;
+    public String getName() {
+        return name;
     }
 
-    public String getCharacterClass() {
-        return characterClass;
-    }
-    public void setCharacterClass(String characterClass) {
-        this.characterClass = characterClass;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public int getHealth() {
         return health;
     }
+
     public void setHealth(int health) {
         this.health = health;
     }
 
+    public Class getCharacterClass() {
+        return characterClass;
+    }
 
+    public void setCharacterClass(Class characterClass) {
+        this.characterClass = characterClass;
+    }
 
+    public int getLevel() {
+        return level;
+    }
 
+    public void setLevel(int level) {
+        this.level = level;
+    }
 
+    public int getConstitution() {
+        return constitution;
+    }
+    public void setConstitution(int constitution) {
+        this.constitution = constitution;
+    }
 
+    public int getConstitutionModifier() {
+        return constitutionModifier;
+    }
 
-
+    public void setConstitutionModifier(int constitutionModifier) {
+        this.constitutionModifier = constitutionModifier;
+    }
 }

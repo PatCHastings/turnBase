@@ -2,6 +2,8 @@ package com.javaproject.turnbase.controller;
 
 import com.javaproject.turnbase.entity.Enemy;
 import com.javaproject.turnbase.repository.EnemyRepository;
+import com.javaproject.turnbase.service.EnemyService;
+import com.javaproject.turnbase.service.MonsterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,12 +12,16 @@ import java.util.Random;
 
 @RestController
 @RequestMapping("/api/enemies")
+@CrossOrigin(origins = "http://localhost:5174")
 public class EnemyController {
 
     @Autowired
     private EnemyRepository enemyRepository;
 
-    private static final String[] ENEMY_NAMES = {"Goblin", "Orc", "Troll", "Dragon"};
+    @Autowired
+    private EnemyService enemyService;
+
+
 
     @GetMapping
     public List<Enemy> getAllEnemies() {
@@ -28,10 +34,7 @@ public class EnemyController {
     }
 
     @PostMapping
-    public Enemy createEnemy() {
-        Enemy enemy = new Enemy();
-        enemy.setEnemyName(generateRandomEnemyName());
-        enemy.setEnemyHealth(100); // Default health value
+    public Enemy createEnemy(@RequestBody Enemy enemy) {
         return enemyRepository.save(enemy);
     }
 
@@ -41,10 +44,28 @@ public class EnemyController {
         if (enemy != null) {
             enemy.setEnemyName(enemyDetails.getEnemyName());
             enemy.setEnemyHealth(enemyDetails.getEnemyHealth());
+            enemy.setEnemyType(enemyDetails.getEnemyType());
+            enemy.setSize(enemyDetails.getSize());
+            enemy.setType(enemyDetails.getType());
+            enemy.setAlignment(enemyDetails.getAlignment());
+            enemy.setArmorClass(enemyDetails.getArmorClass());
+            enemy.setSpeed(enemyDetails.getSpeed());
+            enemy.setStrength(enemyDetails.getStrength());
+            enemy.setDexterity(enemyDetails.getDexterity());
+            enemy.setConstitution(enemyDetails.getConstitution());
+            enemy.setIntelligence(enemyDetails.getIntelligence());
+            enemy.setWisdom(enemyDetails.getWisdom());
+            enemy.setCharisma(enemyDetails.getCharisma());
+            enemy.setChallengeRating(enemyDetails.getChallengeRating());
             return enemyRepository.save(enemy);
         } else {
             return null;
         }
+    }
+
+    @PostMapping("/generate/{monsterIndex}")
+    public Enemy createEnemyFromMonster(@PathVariable String monsterIndex) {
+        return enemyService.createEnemyFromMonster(monsterIndex);
     }
 
     @DeleteMapping("/{id}")
@@ -52,8 +73,19 @@ public class EnemyController {
         enemyRepository.deleteById(id);
     }
 
-    private String generateRandomEnemyName() {
-        Random random = new Random();
-        return ENEMY_NAMES[random.nextInt(ENEMY_NAMES.length)];
-    }
+
+
+
+    // New methods for D&D API integration.
+    // Created MonsterController, separate for now.
+
+//    @GetMapping("/external/monsters")
+//    public String getAllMonsters() {
+//        return monsterService.getMonsters();
+//    }
+//
+//    @GetMapping("/external/monsters/{url}")
+//    public String getMonsterDetails(@PathVariable String url) {
+//        return monsterService.getMonsterDetails(url);
+//    }
 }

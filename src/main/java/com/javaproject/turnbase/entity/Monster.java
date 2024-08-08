@@ -1,21 +1,19 @@
 package com.javaproject.turnbase.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrimaryKeyJoinColumn;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Enemy {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
-    private String enemyName;
-    private int enemyHealth;
-    private String enemyType;
+public class Monster extends Enemy {
+    private String index; // Use 'index' as the primary key
+    private String name;
+    private int hitPoints;
+    private String hitDice;
     private String size;
     private String type;
     private String alignment;
@@ -28,39 +26,38 @@ public class Enemy {
     private int wisdom;
     private int charisma;
     private int challengeRating;
+    private String url;
 
-    // Getters and Setters
 
-    public Long getId() {
-        return id;
+    public String getIndex() {
+        return index;
+    }
+    public void setIndex(String index) {
+        this.index = index;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public String getName() {
+        return name;
     }
 
-    public String getEnemyName() {
-        return enemyName;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public void setEnemyName(String enemyName) {
-        this.enemyName = enemyName;
+    public int getHitPoints() {
+        return hitPoints;
     }
 
-    public int getEnemyHealth() {
-        return enemyHealth;
+    public void setHitPoints(int hitPoints) {
+        this.hitPoints = hitPoints;
     }
 
-    public void setEnemyHealth(int enemyHealth) {
-        this.enemyHealth = enemyHealth;
+    public String getHitDice() {
+        return hitDice;
     }
 
-    public String getEnemyType() {
-        return enemyType;
-    }
-
-    public void setEnemyType(String enemyType) {
-        this.enemyType = enemyType;
+    public void setHitDice(String hitDice) {
+        this.hitDice = hitDice;
     }
 
     public String getSize() {
@@ -151,11 +148,20 @@ public class Enemy {
         this.charisma = charisma;
     }
 
+    @Override
     public int getChallengeRating() {
         return challengeRating;
     }
-
+    @Override
     public void setChallengeRating(int challengeRating) {
         this.challengeRating = challengeRating;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 }
