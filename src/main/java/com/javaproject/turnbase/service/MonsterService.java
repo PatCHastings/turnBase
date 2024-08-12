@@ -45,6 +45,10 @@ public class MonsterService {
         String apiUrl = "https://www.dnd5eapi.co" + endpoint;
         return restTemplate.getForObject(apiUrl, String.class);
     }
+    public String getMonsterDetailsRaw(String index) {
+        String apiUrl = "https://www.dnd5eapi.co/api/monsters/" + index;
+        return restTemplate.getForObject(apiUrl, String.class);
+    }
 
     public Monster saveMonster(Monster monster) {
         return monsterRepository.save(monster);

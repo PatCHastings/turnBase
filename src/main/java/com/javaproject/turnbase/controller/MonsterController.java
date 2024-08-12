@@ -23,6 +23,10 @@ public class MonsterController {
     public String getAllMonsters() {
         return monsterService.getMonstersFromAPI();
     }
+    @GetMapping("/raw")
+    public String getAllMonstersRaw() {
+        return monsterService.getMonstersFromAPI();
+    }
 
     @GetMapping
     public List<Monster> getAllFetchedMonsters() {
@@ -36,7 +40,7 @@ public class MonsterController {
 
     @GetMapping("/raw/{index}")
     public String getMonsterDetailsRaw(@PathVariable String index) {
-        return monsterService.getMonsterDetails(index);
+        return monsterService.getMonsterDetailsRaw("/api/monsters/" + index);
     }
 
     @PostMapping

@@ -36,6 +36,7 @@ public class Enemy {
     private List<Action> actions;
 
     @ElementCollection
+    @CollectionTable(name = "enemy_armor_class", joinColumns = @JoinColumn(name = "enemy_id"))
     private List<ArmorClass> armorClass;
 
     @Lob
