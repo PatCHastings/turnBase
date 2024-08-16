@@ -19,10 +19,15 @@ public class Player {
     private int constitution;
     private int constitutionModifier;
     private int strength;
+    private int strengthModifier;
     private int dexterity;
+    private int dexterityModifier;
     private int intelligence;
+    private int intelligenceModifier;
     private int wisdom;
+    private int wisdomModifier;
     private int charisma;
+    private int charismaModifier;
 
     @ManyToOne
     @JoinColumn(name = "class_index")
@@ -40,12 +45,28 @@ public class Player {
         this.strength = strength;
     }
 
+    public int getStrengthModifier() {
+        return strengthModifier;
+    }
+
+    public void setStrengthModifier(int strengthModifier) {
+        this.strengthModifier = strengthModifier;
+    }
+
     public int getDexterity() {
         return dexterity;
     }
 
     public void setDexterity(int dexterity) {
         this.dexterity = dexterity;
+    }
+
+    public int getDexterityModifier() {
+        return dexterityModifier;
+    }
+
+    public void setDexterityModifier(int dexterityModifier) {
+        this.dexterityModifier = dexterityModifier;
     }
 
     public int getIntelligence() {
@@ -56,6 +77,14 @@ public class Player {
         this.intelligence = intelligence;
     }
 
+    public int getIntelligenceModifier() {
+        return intelligenceModifier;
+    }
+
+    public void setIntelligenceModifier(int intelligenceModifier) {
+        this.intelligenceModifier = intelligenceModifier;
+    }
+
     public int getWisdom() {
         return wisdom;
     }
@@ -64,12 +93,28 @@ public class Player {
         this.wisdom = wisdom;
     }
 
+    public int getWisdomModifier() {
+        return wisdomModifier;
+    }
+
+    public void setWisdomModifier(int wisdomModifier) {
+        this.wisdomModifier = wisdomModifier;
+    }
+
     public int getCharisma() {
         return charisma;
     }
 
     public void setCharisma(int charisma) {
         this.charisma = charisma;
+    }
+
+    public int getCharismaModifier() {
+        return charismaModifier;
+    }
+
+    public void setCharismaModifier(int charismaModifier) {
+        this.charismaModifier = charismaModifier;
     }
 
     public Long getId() {

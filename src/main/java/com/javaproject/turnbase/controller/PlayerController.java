@@ -32,6 +32,13 @@ public class PlayerController {
         return playerRepository.findById(id).orElse(null);
     }
 
+    @GetMapping("/check-name")
+    public Map<String, Object> checkPlayerName(@RequestParam String name) {
+        boolean exists = playerRepository.existsByName(name);
+        long totalPlayers = playerRepository.count();
+        return Map.of("exists", exists, "totalPlayers", totalPlayers);
+    }
+
     @PostMapping
     public Player createPlayer(@RequestBody Player player) {
         // Ensure the class is correctly set
@@ -73,16 +80,35 @@ public class PlayerController {
             // Handle updates for ability scores other than Constitution
             int strength = abilityScores.getOrDefault("strength", 0) != null ? abilityScores.get("strength") : 0;
             int dexterity = abilityScores.getOrDefault("dexterity", 0) != null ? abilityScores.get("dexterity") : 0;
+            int constitution = abilityScores.getOrDefault("constitution", 0) != null ? abilityScores.get("constitution") : 0;
             int intelligence = abilityScores.getOrDefault("intelligence", 0) != null ? abilityScores.get("intelligence") : 0;
             int wisdom = abilityScores.getOrDefault("wisdom", 0) != null ? abilityScores.get("wisdom") : 0;
             int charisma = abilityScores.getOrDefault("charisma", 0) != null ? abilityScores.get("charisma") : 0;
 
-            // Set the player's ability scores
+            // Set the player's ability scores n modifiers
             player.setStrength(strength);
+            int strengthModifier = AbilityScoreGenerator.calculateModifier(strength);
+            player.setStrengthModifier(strengthModifier);
+
             player.setDexterity(dexterity);
+            int dexterityModifier = AbilityScoreGenerator.calculateModifier(dexterity);
+            player.setDexterityModifier(dexterityModifier);
+
+            player.setConstitution(constitution);
+            int constitutionModifier = AbilityScoreGenerator.calculateModifier(constitution);
+            player.setConstitutionModifier(constitutionModifier);
+
             player.setIntelligence(intelligence);
+            int intelligenceModifier = AbilityScoreGenerator.calculateModifier(intelligence);
+            player.setIntelligenceModifier(intelligenceModifier);
+
             player.setWisdom(wisdom);
+            int wisdomModifier = AbilityScoreGenerator.calculateModifier(wisdom);
+            player.setWisdomModifier(wisdomModifier);
+
             player.setCharisma(charisma);
+            int charismaModifier = AbilityScoreGenerator.calculateModifier(charisma);
+            player.setCharismaModifier(charismaModifier);
 
             // Save the updated player
             return playerRepository.save(player);
