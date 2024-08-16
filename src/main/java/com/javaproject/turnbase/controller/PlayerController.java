@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/players")
@@ -26,7 +27,7 @@ public class PlayerController {
         return playerRepository.findAll();
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/id/{id}")
     public Player getPlayerById(@PathVariable Long id) {
         return playerRepository.findById(id).orElse(null);
     }
@@ -52,7 +53,7 @@ public class PlayerController {
         return playerRepository.save(player);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/id/{id}")
     public Player updatePlayer(@PathVariable Long id, @RequestBody Player playerDetails) {
         Player player = playerRepository.findById(id).orElse(null);
         if (player != null) {
@@ -65,4 +66,33 @@ public class PlayerController {
         }
     }
 
+    @PutMapping("/id/{id}/update-scores")
+    public Player updatePlayerAbilityScores(@PathVariable Long id, @RequestBody Map<String, Integer> abilityScores) {
+        Player player = playerRepository.findById(id).orElse(null);
+        if (player != null) {
+            // Handle updates for ability scores other than Constitution
+            int strength = abilityScores.getOrDefault("strength", 0) != null ? abilityScores.get("strength") : 0;
+            int dexterity = abilityScores.getOrDefault("dexterity", 0) != null ? abilityScores.get("dexterity") : 0;
+            int intelligence = abilityScores.getOrDefault("intelligence", 0) != null ? abilityScores.get("intelligence") : 0;
+            int wisdom = abilityScores.getOrDefault("wisdom", 0) != null ? abilityScores.get("wisdom") : 0;
+            int charisma = abilityScores.getOrDefault("charisma", 0) != null ? abilityScores.get("charisma") : 0;
+
+            // Set the player's ability scores
+            player.setStrength(strength);
+            player.setDexterity(dexterity);
+            player.setIntelligence(intelligence);
+            player.setWisdom(wisdom);
+            player.setCharisma(charisma);
+
+            // Save the updated player
+            return playerRepository.save(player);
+        } else {
+            throw new NullPointerException("Player not found with id: " + id);
+        }
+    }
+
+    @GetMapping("/generate")
+    public int[] generateAbilityScores() {
+        return AbilityScoreGenerator.generateRandomAbilityScores();
+    }
 }

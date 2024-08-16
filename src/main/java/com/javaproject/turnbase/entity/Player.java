@@ -18,6 +18,11 @@ public class Player {
     private int level;
     private int constitution;
     private int constitutionModifier;
+    private int strength;
+    private int dexterity;
+    private int intelligence;
+    private int wisdom;
+    private int charisma;
 
     @ManyToOne
     @JoinColumn(name = "class_index")
@@ -25,11 +30,48 @@ public class Player {
     private Class characterClass;
 
 
-
-
-
-
     // Getters and setters
+
+    public int getStrength() {
+        return strength;
+    }
+
+    public void setStrength(int strength) {
+        this.strength = strength;
+    }
+
+    public int getDexterity() {
+        return dexterity;
+    }
+
+    public void setDexterity(int dexterity) {
+        this.dexterity = dexterity;
+    }
+
+    public int getIntelligence() {
+        return intelligence;
+    }
+
+    public void setIntelligence(int intelligence) {
+        this.intelligence = intelligence;
+    }
+
+    public int getWisdom() {
+        return wisdom;
+    }
+
+    public void setWisdom(int wisdom) {
+        this.wisdom = wisdom;
+    }
+
+    public int getCharisma() {
+        return charisma;
+    }
+
+    public void setCharisma(int charisma) {
+        this.charisma = charisma;
+    }
+
     public Long getId() {
         return id;
     }
