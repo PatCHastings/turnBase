@@ -52,6 +52,8 @@ public class PlayerController {
             int constitutionModifier = AbilityScoreGenerator.calculateModifier(constitution);
             player.setConstitution(constitution);
             player.setConstitutionModifier(constitutionModifier);
+            Player updatePlayer = new Player();
+            player.setStrength(updatePlayer.getStrength());
 
             // Calculate starting HP
             int startingHP = AbilityScoreGenerator.calculateStartingHP(characterClass, player.getLevel(), constitutionModifier);
