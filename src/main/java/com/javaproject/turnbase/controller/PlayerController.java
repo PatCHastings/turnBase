@@ -65,11 +65,13 @@ public class PlayerController {
     @PutMapping("/id/{id}")
     public Player updatePlayer(@PathVariable Long id, @RequestBody Player playerDetails) {
         Player player = playerRepository.findById(id).orElse(null);
-        if (player != null) {
+        if (player != null && player.getCharacterImage() != null) {
             player.setName(playerDetails.getName());
             player.setHealth(playerDetails.getHealth());
             player.setCharacterClass(playerDetails.getCharacterClass());
+            player.setCharacterImage(playerDetails.getCharacterImage());
             return playerRepository.save(player);
+
         } else {
             return null;
         }

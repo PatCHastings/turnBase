@@ -28,6 +28,8 @@ public class Player {
     private int wisdomModifier;
     private int charisma;
     private int charismaModifier;
+    private String characterImage;
+
 
     @ManyToOne
     @JoinColumn(name = "class_index")
@@ -36,6 +38,15 @@ public class Player {
 
 
     // Getters and setters
+
+
+    public String getCharacterImage() {
+        return characterImage;
+    }
+
+    public void setCharacterImage(String characterImage) {
+        this.characterImage = characterImage;
+    }
 
     public int getStrength() {
         return strength;
