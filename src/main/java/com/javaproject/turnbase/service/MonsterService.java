@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.javaproject.turnbase.entity.Monster;
 import com.javaproject.turnbase.repository.MonsterRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -13,15 +14,21 @@ import java.io.IOException;
 import java.util.List;
 
 @Service
-public class MonsterService {
+public class MonsterService extends AbstractCharacterService<Monster> {
 
     private final RestTemplate restTemplate;
 
     @Autowired
     private MonsterRepository monsterRepository;
 
+    @Autowired
     public MonsterService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
+    }
+
+    @Override
+    protected JpaRepository<Monster, Long> getRepository() {
+        return monsterRepository;
     }
 
     public String getMonstersFromAPI() {
@@ -34,8 +41,11 @@ public class MonsterService {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             JsonNode rootNode = objectMapper.readTree(jsonResponse);
+
             List<Monster> monsters = objectMapper.convertValue(rootNode.path("results"), new TypeReference<>(){});
             monsterRepository.saveAll(monsters);
+
+
         } catch (IOException e) {
             e.printStackTrace();
         }

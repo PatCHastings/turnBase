@@ -2,7 +2,9 @@ package com.javaproject.turnbase.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
 
@@ -10,7 +12,7 @@ import java.util.List;
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Enemy {
+public class Enemy extends GameCharacter{
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -61,13 +63,14 @@ public class Enemy {
             this.type = type;
         }
 
-        public int getValue() {
+        public int getArmorValue() {
             return armorValue;
         }
 
-        public void setValue(int value) {
+        public void setArmorValue(int value) {
             this.armorValue = value;
         }
+
     }
 
     @Embeddable
@@ -239,6 +242,13 @@ public class Enemy {
 
     public void setActions(List<Action> actions) {
         this.actions = actions;
+    }
+
+    public int calculateArmorClass() {
+        if (armorClass != null && !armorClass.isEmpty()) {
+            return armorClass.get(0).getArmorValue(); // Use getArmorValue() as intended
+        }
+        return 10; // Default armor class if none is available
     }
 
 }

@@ -60,7 +60,6 @@ public class EnemyController {
             enemy.setSpecialAbilities(enemyDetails.getSpecialAbilities());
             enemy.setActions(enemyDetails.getActions());
 
-
             return enemyRepository.save(enemy);
         } else {
             return null;

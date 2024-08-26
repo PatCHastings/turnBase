@@ -14,7 +14,7 @@ public class Class {
     @Id
     @Column(unique = true, nullable = false)
     private String index;
-
+    private int baseArmorClass;
     private String name;
 
     @JsonProperty("hit_die")
@@ -41,6 +41,23 @@ public class Class {
     private List<Player> players;
 
     // Getters and setters
+
+
+    public int getBaseArmorClass() {
+        return baseArmorClass;
+    }
+
+    public void setBaseArmorClass(int baseArmorClass) {
+        this.baseArmorClass = baseArmorClass;
+    }
+
+    public List<Proficiency> getProficiencyChoices() {
+        return proficiencyChoices;
+    }
+
+    public void setProficiencyChoices(List<Proficiency> proficiencyChoices) {
+        this.proficiencyChoices = proficiencyChoices;
+    }
 
     public String getIndex() {
         return index;
