@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/api/enemies")
@@ -21,6 +22,7 @@ public class EnemyController {
     @Autowired
     private EnemyService enemyService;
 
+    private static final Logger logger = Logger.getLogger(CombatController.class.getName());
 
 
     @GetMapping
@@ -42,8 +44,8 @@ public class EnemyController {
     public Enemy updateEnemy(@PathVariable Long id, @RequestBody Enemy enemyDetails) {
         Enemy enemy = enemyRepository.findById(id).orElse(null);
         if (enemy != null) {
-            enemy.setEnemyName(enemyDetails.getEnemyName());
-            enemy.setEnemyHealth(enemyDetails.getEnemyHealth());
+            enemy.setName(enemyDetails.getName());
+            enemy.setHealth(enemyDetails.getHealth());
             enemy.setEnemyType(enemyDetails.getEnemyType());
             enemy.setSize(enemyDetails.getSize());
             enemy.setType(enemyDetails.getType());
@@ -59,7 +61,7 @@ public class EnemyController {
             enemy.setChallengeRating(enemyDetails.getChallengeRating());
             enemy.setSpecialAbilities(enemyDetails.getSpecialAbilities());
             enemy.setActions(enemyDetails.getActions());
-
+            logger.info("Saving enemy with armorClass: " + enemy.getArmorClass());
             return enemyRepository.save(enemy);
         } else {
             return null;
@@ -76,19 +78,4 @@ public class EnemyController {
         enemyRepository.deleteById(id);
     }
 
-
-
-
-    // New methods for D&D API integration.
-    // Created MonsterController, separate for now.
-
-//    @GetMapping("/external/monsters")
-//    public String getAllMonsters() {
-//        return monsterService.getMonsters();
-//    }
-//
-//    @GetMapping("/external/monsters/{url}")
-//    public String getMonsterDetails(@PathVariable String url) {
-//        return monsterService.getMonsterDetails(url);
-//    }
 }

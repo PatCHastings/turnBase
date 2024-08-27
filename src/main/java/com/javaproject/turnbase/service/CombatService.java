@@ -13,6 +13,15 @@ import java.util.Optional;
 @Service
 public class CombatService {
 
+    private final EnemyRepository enemyRepository;
+    private final PlayerRepository playerRepository;
+
+    @Autowired
+    public CombatService(EnemyRepository enemyRepository, PlayerRepository playerRepository) {
+        this.enemyRepository = enemyRepository;
+        this.playerRepository = playerRepository;
+    }
+
     public CombatResult startCombat(GameCharacter player, GameCharacter enemy) {
         boolean playerGoesFirst = player.rollInitiative() >= enemy.rollInitiative();
         List<String> combatLog = new ArrayList<>();
@@ -47,7 +56,7 @@ public class CombatService {
 
     private List<String> executeEnemyTurn(GameCharacter player, GameCharacter enemy) {
         List<String> log = new ArrayList<>();
-        CombatAction enemyAction = new AttackAction(); // Example action
+        CombatAction enemyAction = new AttackAction(enemyRepository, playerRepository); // Example action
         log.add(enemyAction.execute(enemy, player));
         return log;
     }
@@ -65,7 +74,7 @@ public class CombatService {
     // Define the getPlayerAction method
     private CombatAction getPlayerAction() {
         // For now, return a simple attack action
-        return new AttackAction(); // Replace this with actual logic for selecting player's action
+        return new AttackAction(enemyRepository, playerRepository); // Replace this with actual logic for selecting player's action
     }
 }
 

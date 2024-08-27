@@ -23,8 +23,8 @@ public class EnemyService {
         if (optionalMonster.isPresent()) {
             Monster monster = optionalMonster.get();
             Enemy enemy = new Enemy();
-            enemy.setEnemyName(monster.getName());
-            enemy.setEnemyHealth(monster.getHitPoints());
+            enemy.setName(monster.getName());
+            enemy.setHealth(monster.getHitPoints());
             enemy.setEnemyType(monster.getType());
             enemy.setSize(monster.getSize());
             enemy.setType(monster.getType());

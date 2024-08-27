@@ -42,7 +42,7 @@ public class CombatController {
 
     @PostMapping("/action")
     public ResponseEntity<CombatResult> performAction(@RequestParam Long playerId, @RequestParam Long enemyId, @RequestParam String actionType) {
-        logger.info("Performing action: " + actionType + " for player: " + playerId + " against enemy: " + enemyId);
+        logger.info("Performing action: " + actionType + " against enemy: " + enemyId);
         GameCharacter player = playerRepository.findById(playerId).orElseThrow();
         GameCharacter enemy = enemyRepository.findById(enemyId).orElseThrow();
 
@@ -51,7 +51,7 @@ public class CombatController {
 
         switch (actionType.toLowerCase()) {
             case "attack":
-                action = new AttackAction();
+                action = new AttackAction(enemyRepository, playerRepository);
                 combatLogEntry = action.execute(player, enemy); // Assuming execute returns a string log entry
                 break;
             case "skill":

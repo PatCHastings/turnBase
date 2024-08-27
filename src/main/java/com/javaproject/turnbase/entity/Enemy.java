@@ -1,5 +1,6 @@
 package com.javaproject.turnbase.entity;
 
+import com.javaproject.turnbase.controller.CombatController;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -7,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 @Entity
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
@@ -17,20 +19,14 @@ public class Enemy extends GameCharacter{
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    private String enemyName;
-    private int enemyHealth;
     private String enemyType;
     private String size;
     private String type;
     private String alignment;
     private String speed;
-    private int strength;
-    private int dexterity;
-    private int constitution;
-    private int intelligence;
-    private int wisdom;
-    private int charisma;
     private int challengeRating;
+
+    private static final Logger logger = Logger.getLogger(CombatController.class.getName());
 
     // dynamic fields
 
@@ -67,8 +63,8 @@ public class Enemy extends GameCharacter{
             return armorValue;
         }
 
-        public void setArmorValue(int value) {
-            this.armorValue = value;
+        public void setArmorValue(int armorValue) {
+            this.armorValue = armorValue;
         }
 
     }
@@ -106,22 +102,6 @@ public class Enemy extends GameCharacter{
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public String getEnemyName() {
-        return enemyName;
-    }
-
-    public void setEnemyName(String enemyName) {
-        this.enemyName = enemyName;
-    }
-
-    public int getEnemyHealth() {
-        return enemyHealth;
-    }
-
-    public void setEnemyHealth(int enemyHealth) {
-        this.enemyHealth = enemyHealth;
     }
 
     public String getEnemyType() {
@@ -162,54 +142,6 @@ public class Enemy extends GameCharacter{
 
     public void setSpeed(String speed) {
         this.speed = speed;
-    }
-
-    public int getStrength() {
-        return strength;
-    }
-
-    public void setStrength(int strength) {
-        this.strength = strength;
-    }
-
-    public int getDexterity() {
-        return dexterity;
-    }
-
-    public void setDexterity(int dexterity) {
-        this.dexterity = dexterity;
-    }
-
-    public int getConstitution() {
-        return constitution;
-    }
-
-    public void setConstitution(int constitution) {
-        this.constitution = constitution;
-    }
-
-    public int getIntelligence() {
-        return intelligence;
-    }
-
-    public void setIntelligence(int intelligence) {
-        this.intelligence = intelligence;
-    }
-
-    public int getWisdom() {
-        return wisdom;
-    }
-
-    public void setWisdom(int wisdom) {
-        this.wisdom = wisdom;
-    }
-
-    public int getCharisma() {
-        return charisma;
-    }
-
-    public void setCharisma(int charisma) {
-        this.charisma = charisma;
     }
 
     public int getChallengeRating() {
