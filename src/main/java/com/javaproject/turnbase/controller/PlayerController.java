@@ -6,6 +6,8 @@ import com.javaproject.turnbase.repository.ClassRepository;
 import com.javaproject.turnbase.repository.PlayerRepository;
 import com.javaproject.turnbase.util.AbilityScoreGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,43 +24,45 @@ public class PlayerController {
     @Autowired
     private ClassRepository classRepository;
 
-    @GetMapping
-    public List<Player> getAllPlayers() {
-        return playerRepository.findAll();
-    }
-
     @GetMapping("/id/{id}")
-    public Player getPlayerById(@PathVariable Long id) {
-        return playerRepository.findById(id).orElse(null);
-    }
-
-    @GetMapping("/check-name")
-    public Map<String, Object> checkPlayerName(@RequestParam String name) {
-        boolean exists = playerRepository.existsByName(name);
-        long totalPlayers = playerRepository.count();
-        return Map.of("exists", exists, "totalPlayers", totalPlayers);
+    public ResponseEntity<Player> getPlayerById(@PathVariable Long id) {
+        Player player = playerRepository.findById(id).orElse(null);
+        if (player == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(player);
     }
 
     @PostMapping
-    public Player createPlayer(@RequestBody Player player) {
+    public ResponseEntity<?> createPlayer(@RequestBody Player player) {
+        // Check if a player with the same name already exists
+        if (playerRepository.existsByName(player.getName())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("A player with the name '" + player.getName() + "' already exists.");
+        }
+
         // Ensure the class is correctly set
         if (player.getCharacterClass() != null && player.getCharacterClass().getIndex() != null) {
             Class characterClass = classRepository.findById(player.getCharacterClass().getIndex()).orElse(null);
             player.setCharacterClass(characterClass);
         }
-        return playerRepository.save(player);
+        if (player.getName() == null || player.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Player name cannot be null or empty");
+        }
+
+        Player savedPlayer = playerRepository.save(player);
+        return ResponseEntity.ok(savedPlayer);
     }
 
     @PutMapping("/id/{id}")
     public Player updatePlayer(@PathVariable Long id, @RequestBody Player playerDetails) {
         Player player = playerRepository.findById(id).orElse(null);
-        if (player != null && player.getCharacterImage() != null) {
+        if (player != null) {
             player.setName(playerDetails.getName());
             player.setHealth(playerDetails.getHealth());
             player.setCharacterClass(playerDetails.getCharacterClass());
             player.setCharacterImage(playerDetails.getCharacterImage());
             return playerRepository.save(player);
-
         } else {
             return null;
         }
@@ -110,7 +114,6 @@ public class PlayerController {
         // Update player's health based on the new constitution
         updatePlayerHealth(existingPlayer);
 
-        // Save the updated player with all fields intact
         return playerRepository.save(existingPlayer);
     }
 

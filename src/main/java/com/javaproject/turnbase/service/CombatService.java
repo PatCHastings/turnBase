@@ -6,44 +6,50 @@ import com.javaproject.turnbase.repository.PlayerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
 public class CombatService {
 
-    public String startCombat(GameCharacter player, GameCharacter enemy) {
+    public CombatResult startCombat(GameCharacter player, GameCharacter enemy) {
         boolean playerGoesFirst = player.rollInitiative() >= enemy.rollInitiative();
+        List<String> combatLog = new ArrayList<>();
 
         while (player.getHealth() > 0 && enemy.getHealth() > 0) {
             if (playerGoesFirst) {
-                CombatAction playerAction = getPlayerAction(); // This is where player input comes in
-                playerAction.execute(player, enemy);
+                combatLog.addAll(executePlayerTurn(player, enemy));
                 if (enemy.getHealth() <= 0) break;
 
-                executeEnemyTurn(player, enemy);
+                combatLog.addAll(executeEnemyTurn(player, enemy));
             } else {
-                executeEnemyTurn(player, enemy);
+                combatLog.addAll(executeEnemyTurn(player, enemy));
                 if (player.getHealth() <= 0) break;
 
-                CombatAction playerAction = getPlayerAction(); // This is where player input comes in
-                playerAction.execute(player, enemy);
+                combatLog.addAll(executePlayerTurn(player, enemy));
             }
             playerGoesFirst = !playerGoesFirst; // Switch turns
         }
 
-        return determineWinner(player, enemy);
+        String winner = determineWinner(player, enemy);
+        combatLog.add(winner);
+
+        return new CombatResult(player.getHealth(), enemy.getHealth(), combatLog);
     }
 
-    private CombatAction getPlayerAction() {
-        // For now, return an AttackAction or any other action based on player input
-        // This can be extended to include different types of actions (skills, items, etc.)
-        return new AttackAction(); // Placeholder, replace with actual player input
+    private List<String> executePlayerTurn(GameCharacter player, GameCharacter enemy) {
+        List<String> log = new ArrayList<>();
+        CombatAction playerAction = getPlayerAction(); // Get player's action
+        log.add(playerAction.execute(player, enemy));
+        return log;
     }
 
-    private void executeEnemyTurn(GameCharacter player, GameCharacter enemy) {
-        // Basic enemy logic for now, could be expanded to be more complex
-        CombatAction enemyAction = new AttackAction(); // Placeholder for now
-        enemyAction.execute(enemy, player);
+    private List<String> executeEnemyTurn(GameCharacter player, GameCharacter enemy) {
+        List<String> log = new ArrayList<>();
+        CombatAction enemyAction = new AttackAction(); // Example action
+        log.add(enemyAction.execute(enemy, player));
+        return log;
     }
 
     private String determineWinner(GameCharacter player, GameCharacter enemy) {
@@ -55,7 +61,15 @@ public class CombatService {
             return "Combat ends in a draw!";
         }
     }
+
+    // Define the getPlayerAction method
+    private CombatAction getPlayerAction() {
+        // For now, return a simple attack action
+        return new AttackAction(); // Replace this with actual logic for selecting player's action
+    }
 }
+
+
 
 
 

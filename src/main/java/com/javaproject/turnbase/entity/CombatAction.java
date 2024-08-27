@@ -1,6 +1,6 @@
 package com.javaproject.turnbase.entity;
 
 public interface CombatAction {
-    void execute(GameCharacter attacker, GameCharacter defender);
+    String execute(GameCharacter attacker, GameCharacter defender);
 }
 

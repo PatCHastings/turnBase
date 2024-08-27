@@ -1,20 +1,24 @@
 package com.javaproject.turnbase.controller;
 
 //import com.javaproject.turnbase.entity.AttackAction;
+import com.javaproject.turnbase.entity.AttackAction;
 import com.javaproject.turnbase.entity.CombatAction;
 import com.javaproject.turnbase.entity.GameCharacter;
 import com.javaproject.turnbase.repository.EnemyRepository;
 import com.javaproject.turnbase.repository.PlayerRepository;
+import com.javaproject.turnbase.service.CombatResult;
 import com.javaproject.turnbase.service.CombatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/combat")
+@CrossOrigin(origins = "http://localhost:5174")
 public class CombatController {
 
     @Autowired
@@ -25,24 +29,30 @@ public class CombatController {
     @Autowired
     private CombatService combatService;
 
+    private static final Logger logger = Logger.getLogger(CombatController.class.getName());
+
     @PostMapping("/start")
-    public ResponseEntity<String> startCombat(@RequestParam Long playerId, @RequestParam Long enemyId) {
+    public ResponseEntity<CombatResult> startCombat(@RequestParam Long playerId, @RequestParam Long enemyId) {
         GameCharacter player = playerRepository.findById(playerId).orElseThrow();
         GameCharacter enemy = enemyRepository.findById(enemyId).orElseThrow();
 
-        String result = combatService.startCombat(player, enemy);
+        CombatResult result = combatService.startCombat(player, enemy);
         return ResponseEntity.ok(result);
     }
 
     @PostMapping("/action")
-    public ResponseEntity<String> performAction(@RequestParam Long playerId, @RequestParam Long enemyId, @RequestParam String actionType) {
+    public ResponseEntity<CombatResult> performAction(@RequestParam Long playerId, @RequestParam Long enemyId, @RequestParam String actionType) {
+        logger.info("Performing action: " + actionType + " for player: " + playerId + " against enemy: " + enemyId);
         GameCharacter player = playerRepository.findById(playerId).orElseThrow();
         GameCharacter enemy = enemyRepository.findById(enemyId).orElseThrow();
 
         CombatAction action;
+        String combatLogEntry;
+
         switch (actionType.toLowerCase()) {
             case "attack":
-                //action = new AttackAction();
+                action = new AttackAction();
+                combatLogEntry = action.execute(player, enemy); // Assuming execute returns a string log entry
                 break;
             case "skill":
                 // action = new SkillAction();
@@ -51,11 +61,15 @@ public class CombatController {
                 // action = new UseItemAction();
                 throw new UnsupportedOperationException("Item action not yet implemented");
             default:
-                return ResponseEntity.badRequest().body("Invalid action type");
+                return ResponseEntity.badRequest().body(null);
         }
 
-        //action.execute(player, enemy);
-        return ResponseEntity.ok("Action performed");
+        // Create the CombatResult object with updated health and combat log entry
+        List<String> combatLog = new ArrayList<>();
+        combatLog.add(combatLogEntry);
+        CombatResult result = new CombatResult(player.getHealth(), enemy.getHealth(), combatLog);
+
+        return ResponseEntity.ok(result);
     }
 }
 

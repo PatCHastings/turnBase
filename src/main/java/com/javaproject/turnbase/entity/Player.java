@@ -16,8 +16,6 @@ public class Player extends GameCharacter{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String name;
-    private int health;
     private int level;
     private String characterImage;
 
@@ -48,15 +46,6 @@ public class Player extends GameCharacter{
     // Getters and setters
 
 
-    public String getCharacterImage() {
-        return characterImage;
-    }
-
-    public void setCharacterImage(String characterImage) {
-        this.characterImage = characterImage;
-    }
-
-
     public Long getId() {
         return id;
     }
@@ -65,20 +54,20 @@ public class Player extends GameCharacter{
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public List<Equipment> getEquipment() {
+        return equipment;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setEquipment(List<Equipment> equipment) {
+        this.equipment = equipment;
     }
 
-    public int getHealth() {
-        return health;
+    public String getCharacterImage() {
+        return characterImage;
     }
 
-    public void setHealth(int health) {
-        this.health = health;
+    public void setCharacterImage(String characterImage) {
+        this.characterImage = characterImage;
     }
 
     public Class getCharacterClass() {

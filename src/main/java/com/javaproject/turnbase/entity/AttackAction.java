@@ -2,7 +2,7 @@ package com.javaproject.turnbase.entity;
 
 public class AttackAction implements CombatAction {
     @Override
-    public void execute(GameCharacter attacker, GameCharacter defender) {
+    public String execute(GameCharacter attacker, GameCharacter defender) {
         int attackRoll = rollDice(20) + attacker.getStrengthModifier();
         int defenderArmorClass = getArmorClass(defender);
 
@@ -13,6 +13,7 @@ public class AttackAction implements CombatAction {
         } else {
             System.out.println(attacker.getName() + " misses " + defender.getName() + "!");
         }
+        return null;
     }
 
     private int rollDice(int sides) {
