@@ -47,12 +47,13 @@ public class CombatController {
         GameCharacter enemy = enemyRepository.findById(enemyId).orElseThrow();
 
         CombatAction action;
-        String combatLogEntry;
+        String playerActionLog;
+        List<String> combatLog = new ArrayList<>();
 
         switch (actionType.toLowerCase()) {
             case "attack":
                 action = new AttackAction(enemyRepository, playerRepository);
-                combatLogEntry = action.execute(player, enemy); // Assuming execute returns a string log entry
+                playerActionLog  = action.execute(player, enemy); // Assuming execute returns a string log entry
                 break;
             case "skill":
                 // action = new SkillAction();
@@ -63,12 +64,15 @@ public class CombatController {
             default:
                 return ResponseEntity.badRequest().body(null);
         }
+        combatLog.add(playerActionLog);
 
-        // Create the CombatResult object with updated health and combat log entry
-        List<String> combatLog = new ArrayList<>();
-        combatLog.add(combatLogEntry);
+        // After player's action, check if enemy is still alive and perform enemy's turn
+        if (enemy.getHealth() > 0) {
+            AttackAction enemyAttackAction = new AttackAction(enemyRepository, playerRepository);
+            String enemyActionLog = enemyAttackAction.execute(enemy, player);
+            combatLog.add(enemyActionLog);
+        }
         CombatResult result = new CombatResult(player.getHealth(), enemy.getHealth(), combatLog);
-
         return ResponseEntity.ok(result);
     }
 }

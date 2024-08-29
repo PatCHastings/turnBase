@@ -4,10 +4,13 @@ import com.javaproject.turnbase.entity.Enemy;
 import com.javaproject.turnbase.repository.EnemyRepository;
 import com.javaproject.turnbase.service.EnemyService;
 import com.javaproject.turnbase.service.MonsterService;
+import com.javaproject.turnbase.util.AbilityScoreGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.logging.Logger;
 
@@ -61,11 +64,50 @@ public class EnemyController {
             enemy.setChallengeRating(enemyDetails.getChallengeRating());
             enemy.setSpecialAbilities(enemyDetails.getSpecialAbilities());
             enemy.setActions(enemyDetails.getActions());
-            logger.info("Saving enemy with armorClass: " + enemy.getArmorClass());
+
+            logger.info("Saving enemy: " + enemy.getName() + " with updated ability modifiers.");
+
             return enemyRepository.save(enemy);
         } else {
             return null;
         }
+    }
+
+    @PutMapping("/{id}/update-scores")
+    public ResponseEntity<Enemy> updateEnemyAbilityScores(@PathVariable Long id, @RequestBody Map<String, Integer> abilityScores) {
+        Enemy existingEnemy = enemyRepository.findById(id).orElse(null);
+        if (existingEnemy == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        int strength = abilityScores.getOrDefault("strength", existingEnemy.getStrength());
+        int dexterity = abilityScores.getOrDefault("dexterity", existingEnemy.getDexterity());
+        int constitution = abilityScores.getOrDefault("constitution", existingEnemy.getConstitution());
+        int intelligence = abilityScores.getOrDefault("intelligence", existingEnemy.getIntelligence());
+        int wisdom = abilityScores.getOrDefault("wisdom", existingEnemy.getWisdom());
+        int charisma = abilityScores.getOrDefault("charisma", existingEnemy.getCharisma());
+
+        existingEnemy.setStrength(strength);
+        existingEnemy.setStrengthModifier(AbilityScoreGenerator.calculateModifier(strength));
+
+        existingEnemy.setDexterity(dexterity);
+        existingEnemy.setDexterityModifier(AbilityScoreGenerator.calculateModifier(dexterity));
+
+        existingEnemy.setConstitution(constitution);
+        existingEnemy.setConstitutionModifier(AbilityScoreGenerator.calculateModifier(constitution));
+
+        existingEnemy.setIntelligence(intelligence);
+        existingEnemy.setIntelligenceModifier(AbilityScoreGenerator.calculateModifier(intelligence));
+
+        existingEnemy.setWisdom(wisdom);
+        existingEnemy.setWisdomModifier(AbilityScoreGenerator.calculateModifier(wisdom));
+
+        existingEnemy.setCharisma(charisma);
+        existingEnemy.setCharismaModifier(AbilityScoreGenerator.calculateModifier(charisma));
+
+        // Save the updated enemy back to the database
+        Enemy updatedEnemy = enemyRepository.save(existingEnemy);
+        return ResponseEntity.ok(updatedEnemy);
     }
 
     @PostMapping("/generate/{monsterIndex}")
