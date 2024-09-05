@@ -1,5 +1,6 @@
 package com.javaproject.turnbase.service;
 
+import com.javaproject.turnbase.entity.Action;
 import com.javaproject.turnbase.entity.Enemy;
 import com.javaproject.turnbase.entity.Monster;
 import com.javaproject.turnbase.repository.EnemyRepository;
@@ -8,6 +9,8 @@ import com.javaproject.turnbase.util.AbilityScoreGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -40,7 +43,18 @@ public class EnemyService {
             enemy.setCharisma(monster.getCharisma());
             enemy.setChallengeRating(monster.getChallengeRating());
             enemy.setSpecialAbilities(monster.getSpecialAbilities());
-            enemy.setActions(monster.getActions());
+            // Deep copy actions list to avoid shared reference issue
+            List<Action> actionsCopy = new ArrayList<>();
+            for (Action action : monster.getActions()) {
+                Action actionCopy = new Action();
+                actionCopy.setName(action.getName());
+                actionCopy.setDesc(action.getDesc());
+                actionCopy.setAttackBonus(action.getAttackBonus());
+                actionCopy.setCount(action.getCount());
+                actionCopy.setDamage(new ArrayList<>(action.getDamage()));  // Deep copy damage list
+                actionsCopy.add(actionCopy);
+            }
+            enemy.setActions(actionsCopy);
 
             // probably dumb to do it this way. fix later
             enemy.setStrengthModifier(AbilityScoreGenerator.calculateModifier(monster.getStrength()));

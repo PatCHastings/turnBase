@@ -43,6 +43,12 @@ public class MonsterController {
         return monsterService.getMonsterDetailsRaw("/api/monsters/" + index);
     }
 
+    // endpoint to fetch monsters with a challengeRating of 0
+    @GetMapping("/challenge-rating/{rating}")
+    public List<Monster> getMonstersWithChallengeRating(@PathVariable int rating) {
+        return monsterRepository.findByChallengeRating(rating);
+    }
+
     @PostMapping
     public Monster saveMonster(@RequestBody Monster monster) {
         return monsterService.saveMonster(monster);

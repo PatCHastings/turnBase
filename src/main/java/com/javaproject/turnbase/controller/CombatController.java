@@ -1,16 +1,18 @@
 package com.javaproject.turnbase.controller;
 
-//import com.javaproject.turnbase.entity.AttackAction;
 import com.javaproject.turnbase.entity.AttackAction;
 import com.javaproject.turnbase.entity.CombatAction;
+import com.javaproject.turnbase.entity.CombatActionResult;
 import com.javaproject.turnbase.entity.GameCharacter;
 import com.javaproject.turnbase.repository.EnemyRepository;
 import com.javaproject.turnbase.repository.PlayerRepository;
 import com.javaproject.turnbase.service.CombatResult;
 import com.javaproject.turnbase.service.CombatService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.logging.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,60 +22,37 @@ import java.util.logging.Logger;
 @RequestMapping("/combat")
 @CrossOrigin(origins = "http://localhost:5174")
 public class CombatController {
-
-    @Autowired
-    private PlayerRepository playerRepository;
-
-    @Autowired
-    private EnemyRepository enemyRepository;
     @Autowired
     private CombatService combatService;
-
     private static final Logger logger = Logger.getLogger(CombatController.class.getName());
 
     @PostMapping("/start")
     public ResponseEntity<CombatResult> startCombat(@RequestParam Long playerId, @RequestParam Long enemyId) {
-        GameCharacter player = playerRepository.findById(playerId).orElseThrow();
-        GameCharacter enemy = enemyRepository.findById(enemyId).orElseThrow();
+        try {
+            CombatResult result = combatService.startCombat(playerId, enemyId);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            // Log the error with a stack trace for debugging
+            logger.severe("Error starting combat with playerId: " + playerId + " and enemyId: " + enemyId);
+            e.printStackTrace();
 
-        CombatResult result = combatService.startCombat(player, enemy);
-        return ResponseEntity.ok(result);
+            // Create an error-specific CombatActionResult
+            CombatActionResult errorResult = new CombatActionResult(null, null, 0, "Error starting combat: " + e.getMessage());
+
+            // Return a CombatResult with the error-specific CombatActionResult
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new CombatResult(0, 0, List.of(errorResult), false));
+        }
     }
 
     @PostMapping("/action")
-    public ResponseEntity<CombatResult> performAction(@RequestParam Long playerId, @RequestParam Long enemyId, @RequestParam String actionType) {
-        logger.info("Performing action: " + actionType + " against enemy: " + enemyId);
-        GameCharacter player = playerRepository.findById(playerId).orElseThrow();
-        GameCharacter enemy = enemyRepository.findById(enemyId).orElseThrow();
+    public ResponseEntity<CombatResult> performAction(
+            @RequestParam Long playerId,
+            @RequestParam Long enemyId,
+            @RequestParam String actionType,
+            @RequestParam(required = false) Long targetId) {
 
-        CombatAction action;
-        String playerActionLog;
-        List<String> combatLog = new ArrayList<>();
-
-        switch (actionType.toLowerCase()) {
-            case "attack":
-                action = new AttackAction(enemyRepository, playerRepository);
-                playerActionLog  = action.execute(player, enemy); // Assuming execute returns a string log entry
-                break;
-            case "skill":
-                // action = new SkillAction();
-                throw new UnsupportedOperationException("Skill action not yet implemented");
-            case "item":
-                // action = new UseItemAction();
-                throw new UnsupportedOperationException("Item action not yet implemented");
-            default:
-                return ResponseEntity.badRequest().body(null);
-        }
-        combatLog.add(playerActionLog);
-
-        // After player's action, check if enemy is still alive and perform enemy's turn
-        if (enemy.getHealth() > 0) {
-            AttackAction enemyAttackAction = new AttackAction(enemyRepository, playerRepository);
-            String enemyActionLog = enemyAttackAction.execute(enemy, player);
-            combatLog.add(enemyActionLog);
-        }
-        CombatResult result = new CombatResult(player.getHealth(), enemy.getHealth(), combatLog);
+        CombatResult result = combatService.performAction(playerId, enemyId, actionType);
         return ResponseEntity.ok(result);
     }
 }
-

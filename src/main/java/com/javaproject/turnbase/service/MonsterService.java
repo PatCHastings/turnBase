@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class MonsterService extends AbstractCharacterService<Monster> {
@@ -41,13 +43,56 @@ public class MonsterService extends AbstractCharacterService<Monster> {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             JsonNode rootNode = objectMapper.readTree(jsonResponse);
+            List<JsonNode> monsterNodes = objectMapper.convertValue(rootNode.path("results"), new TypeReference<>(){});
 
-            List<Monster> monsters = objectMapper.convertValue(rootNode.path("results"), new TypeReference<>(){});
+            List<Monster> monsters = new ArrayList<>();
+
+            for (JsonNode monsterNode : monsterNodes) {
+                // Fetch additional details for the monster by using its index
+                String index = monsterNode.get("index").asText();
+                String monsterDetailsResponse = getMonsterDetails("/api/monsters/" + index);
+                JsonNode monsterDetailsNode = objectMapper.readTree(monsterDetailsResponse);
+
+                // Map the monster details into a Monster entity
+                Monster monster = new Monster();
+                monster.setIndex(monsterDetailsNode.get("index").asText());
+                monster.setName(monsterDetailsNode.get("name").asText());
+                monster.setHealth(monsterDetailsNode.get("hit_points").asInt());
+
+                // Extract challengeRating and set it to the Monster entity
+                if (monsterDetailsNode.has("challenge_rating")) {
+                    monster.setChallengeRating(monsterDetailsNode.get("challenge_rating").asInt());
+                }
+
+                // You can also map other fields like actions, armorClass, etc., similar to how you did for enemy
+
+                // Add the monster to the list
+                monsters.add(monster);
+            }
+
+            // Save all the monsters to the repository
             monsterRepository.saveAll(monsters);
-
-
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public List<Monster> getAllMonstersWithChallengeRating() {
+        String jsonResponse = getMonstersFromAPI();
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            JsonNode rootNode = objectMapper.readTree(jsonResponse);
+            List<Monster> allMonsters = objectMapper.convertValue(rootNode.path("results"), new TypeReference<>() {});
+            // Fetch challenge ratings for all monsters
+            for (Monster monster : allMonsters) {
+                String monsterDetails = getMonsterDetails("/api/monsters/" + monster.getIndex());
+                Monster detailedMonster = objectMapper.readValue(monsterDetails, Monster.class);
+                monster.setChallengeRating(detailedMonster.getChallengeRating());
+            }
+            return allMonsters;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return List.of();
         }
     }
 

@@ -4,6 +4,7 @@ import com.javaproject.turnbase.controller.CombatController;
 import com.javaproject.turnbase.entity.*;
 import com.javaproject.turnbase.repository.EnemyRepository;
 import com.javaproject.turnbase.repository.PlayerRepository;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,9 +15,12 @@ import java.util.logging.Logger;
 
 @Service
 public class CombatService {
-
     private final EnemyRepository enemyRepository;
     private final PlayerRepository playerRepository;
+    private List<GameCharacter> combatants;
+    private int currentTurnIndex;
+    private final AttackAction attackAction;
+    private boolean combatOngoing;
 
     private static final Logger logger = Logger.getLogger(CombatController.class.getName());
 
@@ -24,99 +28,226 @@ public class CombatService {
     public CombatService(EnemyRepository enemyRepository, PlayerRepository playerRepository) {
         this.enemyRepository = enemyRepository;
         this.playerRepository = playerRepository;
+        this.attackAction = new AttackAction(enemyRepository, playerRepository);
     }
 
-    public CombatResult startCombat(GameCharacter player, GameCharacter enemy) {
-        // Initialize combatants and roll initiative
-        List<Combatant> combatants = initializeCombatants(player, enemy);
-        List<String> combatLog = new ArrayList<>();
 
-        while (player.getHealth() > 0 && enemy.getHealth() > 0) {
-            for (Combatant combatant : combatants) {
-                if (combatant.getCharacter().getHealth() > 0) {
-                    if (combatant.isPlayer()) {
-                        combatLog.addAll(executePlayerTurn(combatant.getCharacter(), enemy));
-                    } else {
-                        combatLog.addAll(executeEnemyTurn(player, combatant.getCharacter()));
-                    }
-                }
-                if (player.getHealth() <= 0 || enemy.getHealth() <= 0) {
-                    break;
-                }
-            }
-        }
+    public CombatResult startCombat(Long playerId, Long enemyId) {
+        Player player = playerRepository.findById(playerId).orElseThrow();
 
-        String winner = determineWinner(player, enemy);
-        combatLog.add(winner);
+        // Force initialization of the equipment collection
+        Hibernate.initialize(player.getEquipment());
 
-        return new CombatResult(player.getHealth(), enemy.getHealth(), combatLog);
+        Enemy enemy = enemyRepository.findById(enemyId).orElseThrow();
+
+        this.combatants = initializeCombatants(player, enemy);
+        this.currentTurnIndex = 0;
+        this.combatOngoing = true;
+
+        return processTurn();
     }
 
-    private List<Combatant> initializeCombatants(GameCharacter player, GameCharacter enemy) {
-        List<Combatant> combatants = new ArrayList<>();
-        // Roll initiative and add both player and enemy to the combatant list
-        combatants.add(new Combatant(player, player.rollInitiative(), true));
-        combatants.add(new Combatant(enemy, enemy.rollInitiative(), false));
+    private List<GameCharacter> initializeCombatants(Player player, Enemy enemy) {
+        List<GameCharacter> combatants = new ArrayList<>();
+        combatants.add(player);
+        combatants.add(enemy);
 
-        // Sort combatants by initiative in descending order
-        Collections.sort(combatants, (c1, c2) -> Integer.compare(c2.getInitiative(), c1.getInitiative()));
-
+        combatants.sort((c1, c2) -> Integer.compare(c2.rollInitiative(), c1.rollInitiative()));
         return combatants;
     }
 
-    private List<String> executePlayerTurn(GameCharacter player, GameCharacter enemy) {
-        List<String> log = new ArrayList<>();
-        CombatAction playerAction = getPlayerAction(); // Get player's action
-        log.add(playerAction.execute(player, enemy));
-        return log;
-    }
+    public CombatResult processTurn() {
+        GameCharacter currentCombatant = combatants.get(currentTurnIndex);
+        List<CombatActionResult> combatLog = new ArrayList<>();
 
-    private List<String> executeEnemyTurn(GameCharacter player, GameCharacter enemy) {
-        List<String> log = new ArrayList<>();
-        AttackAction attackAction = new AttackAction(enemyRepository, playerRepository);
-        String result = attackAction.execute(enemy, player);
-        log.add(result);
-        logger.info(result);
-        return log;
-    }
-
-    private String determineWinner(GameCharacter player, GameCharacter enemy) {
-        if (player.getHealth() <= 0) {
-            return enemy.getName() + " wins!";
-        } else if (enemy.getHealth() <= 0) {
-            return player.getName() + " wins!";
+        if (currentCombatant instanceof Player) {
+            combatLog.add(new CombatActionResult(null, null, 0, "Waiting for player action..."));
         } else {
-            return "Combat ends in a draw!";
+            combatLog.addAll(executeEnemyTurn((Enemy) currentCombatant));
+        }
+
+        if (checkCombatEnd()) {
+            combatOngoing = false;
+            return resolveCombat(combatLog);
+        }
+
+        advanceTurn();
+
+        boolean isPlayerTurn = combatants.get(currentTurnIndex) instanceof Player;
+
+        return new CombatResult(
+                getCurrentPlayer().getHealth(),
+                getCurrentEnemy().getHealth(),
+                combatLog,
+                isPlayerTurn
+        );
+    }
+
+    public CombatResult performAction(Long playerId, Long enemyId, String actionType) {
+        GameCharacter player = playerRepository.findById(playerId).orElseThrow();
+        GameCharacter enemy = enemyRepository.findById(enemyId).orElseThrow();
+        List<CombatActionResult> combatLog = new ArrayList<>();
+
+        switch (actionType.toLowerCase()) {
+            case "attack":
+                combatLog.add(performAttack(player, enemy));
+                break;
+            case "defend":
+                //combatLog.add(performDefend(player));
+                break;
+            case "use_item":
+                //combatLog.add(useItem(player, enemy));
+                break;
+            case "use_skill":
+                //combatLog.add(useSkill(player, enemy));
+                break;
+            case "enemyaction":
+                // Add handling for enemy action
+                combatLog.addAll(executeEnemyTurn((Enemy) enemy));
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown action type: " + actionType);
+        }
+
+        // Check if the combat ends after this action
+        if (checkCombatEnd()) {
+            return resolveCombat(combatLog);
+        }
+
+        // Determine the next turn
+        boolean nextTurnIsPlayer = actionType.equalsIgnoreCase("enemyaction");
+        advanceTurn();
+
+        // Log the health before returning the result
+        logger.info("Player Health after action: " + player.getHealth());
+        logger.info("Enemy Health after action: " + enemy.getHealth());
+
+        return new CombatResult(player.getHealth(), enemy.getHealth(), combatLog, nextTurnIsPlayer);
+    }
+
+    CombatActionResult performAttack(GameCharacter attacker, GameCharacter defender) {
+        int attackRoll = attackAction.rollDice(20) + attacker.getStrengthModifier();
+        int defenderArmorClass = getArmorClass(defender);
+
+        Long attackerId = null;
+        Long defenderId = null;
+
+        // Get attacker ID
+        if (attacker instanceof Player) {
+            attackerId = ((Player) attacker).getId();
+        } else if (attacker instanceof Enemy) {
+            attackerId = ((Enemy) attacker).getId();
+        }
+
+        // Get defender ID
+        if (defender instanceof Player) {
+            defenderId = ((Player) defender).getId();
+        } else if (defender instanceof Enemy) {
+            defenderId = ((Enemy) defender).getId();
+        }
+
+        if (attackRoll >= defenderArmorClass) {
+            int damage = attackAction.calculateDamage(attacker);
+            defender.setHealth(Math.max(defender.getHealth() - damage, 0));
+            saveCharacter(defender);
+
+            return new CombatActionResult(
+                    attackerId,
+                    defenderId,
+                    damage,
+                    attacker.getName() + " hits " + defender.getName() + " for " + damage + " damage!"
+            );
+        } else {
+            return new CombatActionResult(
+                    attackerId,
+                    defenderId,
+                    0,
+                    attacker.getName() + " misses " + defender.getName() + "!"
+            );
         }
     }
 
-    // Define the getPlayerAction method
-    private CombatAction getPlayerAction() {
-        // For now, return a simple attack action
-        return new AttackAction(enemyRepository, playerRepository); // Replace this with actual logic for selecting player's action
+    private int getArmorClass(GameCharacter character) {
+        if (character instanceof Player) {
+            return ((Player) character).getArmorClass();
+        } else if (character instanceof Enemy) {
+            return ((Enemy) character).calculateArmorClass();
+        }
+        return 10; // Default value if the character type is unknown
     }
 
-    private static class Combatant {
-        private final GameCharacter character;
-        private final int initiative;
-        private final boolean isPlayer;
-
-        public Combatant(GameCharacter character, int initiative, boolean isPlayer) {
-            this.character = character;
-            this.initiative = initiative;
-            this.isPlayer = isPlayer;
-        }
-
-        public GameCharacter getCharacter() {
-            return character;
-        }
-
-        public int getInitiative() {
-            return initiative;
-        }
-
-        public boolean isPlayer() {
-            return isPlayer;
+    private void saveCharacter(GameCharacter character) {
+        if (character instanceof Enemy) {
+            enemyRepository.save((Enemy) character);
+        } else if (character instanceof Player) {
+            playerRepository.save((Player) character);
         }
     }
+
+    private List<CombatActionResult> executeEnemyTurn(Enemy enemy) {
+        List<CombatActionResult> combatLog = new ArrayList<>();
+
+        // For now, enemy only attacks player
+        // future implementation: add AI logic to choose different actions.
+
+        Player player = getCurrentPlayer();
+        if (player != null && player.getHealth() > 0) {
+            CombatActionResult attackResult = performAttack(enemy, player);
+            combatLog.add(attackResult);
+        }
+
+        return combatLog;
+    }
+
+    // Implement performDefend, useItem, useSkill methods similarly
+
+    private void advanceTurn() {
+        do {
+            currentTurnIndex = (currentTurnIndex + 1) % combatants.size();
+        } while (combatants.get(currentTurnIndex).getHealth() <= 0);
+    }
+
+    private boolean checkCombatEnd() {
+        boolean allPlayersDefeated = combatants.stream()
+                .filter(c -> c instanceof Player)
+                .allMatch(c -> c.getHealth() <= 0);
+
+        boolean allEnemiesDefeated = combatants.stream()
+                .filter(c -> c instanceof Enemy)
+                .allMatch(c -> c.getHealth() <= 0);
+
+        return allPlayersDefeated || allEnemiesDefeated;
+    }
+
+    private CombatResult resolveCombat(List<CombatActionResult> combatLog) {
+        String result = combatants.stream()
+                .anyMatch(c -> c instanceof Player && c.getHealth() > 0)
+                ? "Player wins!"
+                : "Enemy wins!";
+
+        combatLog.add(new CombatActionResult(null, null, 0, result));
+        return new CombatResult(
+                getCurrentPlayer().getHealth(),
+                getCurrentEnemy().getHealth(),
+                combatLog,
+                false
+        );
+    }
+
+    Player getCurrentPlayer() {
+        return (Player) combatants.stream()
+                .filter(c -> c instanceof Player)
+                .findFirst()
+                .orElse(null);
+    }
+
+    Enemy getCurrentEnemy() {
+        return (Enemy) combatants.stream()
+                .filter(c -> c instanceof Enemy)
+                .findFirst()
+                .orElse(null);
+    }
+
+    // Roll dice, calculate damage, and saveCharacter methods would be implemented here
 }
+

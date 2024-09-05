@@ -21,30 +21,16 @@ public class AttackAction implements CombatAction {
         this.playerRepository = playerRepository;
     }
 
-
     @Override
     public String execute(GameCharacter attacker, GameCharacter defender) {
         int attackRoll = rollDice(20) + attacker.getStrengthModifier();
         int defenderArmorClass = getArmorClass(defender);
 
-        logger.info("attackRoll: " + attackRoll + " defenderArmorClass: " + defenderArmorClass);
-
         if (attackRoll >= defenderArmorClass) {
             int damage = calculateDamage(attacker);
-            int newHealth = defender.getHealth() - damage;
-            if (newHealth < 0) {
-                newHealth = 0; // Health should not drop below 0
-            }
-            defender.setHealth(newHealth); // Update the defender's health
-            logger.info(attacker.getName() + " hits " + defender.getName() + " for " + damage + " damage! health: " + newHealth);
-
-            // Persist the updated health to the database
-            if (defender instanceof Enemy) {
-                enemyRepository.save((Enemy) defender);
-            } else if (defender instanceof Player) {
-                playerRepository.save((Player) defender);
-            }
-
+            defender.setHealth(Math.max(defender.getHealth() - damage, 0));
+            saveCharacter(defender);
+            logger.info(attacker.getName() + " hits " + defender.getName() + " for " + damage + " damage! Remaining health: " + defender.getHealth());
             return attacker.getName() + " hits " + defender.getName() + " for " + damage + " damage!";
         } else {
             logger.info(attacker.getName() + " misses " + defender.getName() + "!");
@@ -52,7 +38,15 @@ public class AttackAction implements CombatAction {
         }
     }
 
-    private int rollDice(int sides) {
+    private void saveCharacter(GameCharacter character) {
+        if (character instanceof Enemy) {
+            enemyRepository.save((Enemy) character);
+        } else if (character instanceof Player) {
+            playerRepository.save((Player) character);
+        }
+    }
+
+    public int rollDice(int sides) {
         return (int) (Math.random() * sides + 1);
     }
 
@@ -67,38 +61,55 @@ public class AttackAction implements CombatAction {
     }
 
     // Calculate damage based on the enemy's damage dice
-    private int calculateDamage(GameCharacter attacker) {
+    public int calculateDamage(GameCharacter attacker) {
         if (attacker instanceof Enemy) {
             List<Action> actions = ((Enemy) attacker).getActions();
             if (actions != null && !actions.isEmpty()) {
                 Action action = actions.get(0); // Use the first action for simplicity
-                int damage = 0;
+                int totalDamage = 0;
                 for (Damage damageDetail : action.getDamage()) {
-                    int[] parsedDice = parseDice(damageDetail.getDamageDice());
-                    int rolledDamage = 0;
-                    for (int i = 0; i < parsedDice[0]; i++) {
-                        rolledDamage += rollDice(parsedDice[1]);
+                    String damageDice = damageDetail.getDamageDice();
+
+                    // Check if damageDice is null or empty
+                    if (damageDice == null || damageDice.isEmpty()) {
+                        // Default to a low value if damageDice is missing or invalid
+                        damageDice = "1d4";
+                        logger.info("Damage dice is missing or invalid, defaulting to " + damageDice);
                     }
-                    // debug-Log the rolled damage before any modifiers
-                    logger.info("Rolled damage before bonus and modifiers: " + rolledDamage);
 
-                    // Add the bonus from the dice string
-                    rolledDamage += parsedDice[2];
-                    logger.info("Rolled damage after adding bonus (" + parsedDice[2] + "): " + rolledDamage);
+                    int rolledDamage = 0;
+                    try {
+                        int[] parsedDice = parseDice(damageDice);
 
-                    // Add the attacker's Strength modifier
-                    rolledDamage += attacker.getStrengthModifier();
-                    logger.info("Rolled damage after adding Strength modifier (" + attacker.getStrengthModifier() + "): " + rolledDamage);
+                        // Roll the dice
+                        for (int i = 0; i < parsedDice[0]; i++) {
+                            int roll = rollDice(parsedDice[1]);
+                            rolledDamage += roll;
+                            logger.info("Rolled a " + roll + " on a d" + parsedDice[1]);
+                        }
 
-                    logger.info("Damage dice: " + damageDetail.getDamageDice() +
-                            ", Final calculated damage: " + rolledDamage);
+                        // Add the bonus from the dice string
+                        rolledDamage += parsedDice[2];
+                        logger.info("Rolled damage after adding bonus (" + parsedDice[2] + "): " + rolledDamage);
 
-                    damage += rolledDamage;
+                        // Add the attacker's Strength modifier
+                        rolledDamage += attacker.getStrengthModifier();
+                        logger.info("Rolled damage after adding Strength modifier (" + attacker.getStrengthModifier() + "): " + rolledDamage);
+
+                        logger.info("Damage dice: " + damageDetail.getDamageDice() +
+                                ", Final calculated damage: " + rolledDamage);
+
+                        totalDamage += rolledDamage;
+                    } catch (IllegalArgumentException e) {
+                        logger.severe("Invalid dice format: " + damageDice);
+                        // Apply minimal damage if dice format is invalid
+                        totalDamage += 1;
+                    }
                 }
-                return damage;
+                return totalDamage;
             }
         }
-        // Default dmg
+        // Default damage calculation
         return rollDice(8) + attacker.getStrengthModifier();
     }
 
@@ -117,13 +128,13 @@ public class AttackAction implements CombatAction {
             throw new IllegalArgumentException("Invalid dice format: " + dice);
         }
 
-        Matcher matcher = Pattern.compile("(\\d+)d(\\d+)(?:\\+(\\d+))?").matcher(dice);
+        Matcher matcher = Pattern.compile("(\\d+)d(\\d+)([-+]\\d+)?").matcher(dice);
         if (matcher.matches()) {
             int numDice = Integer.parseInt(matcher.group(1));
             int numSides = Integer.parseInt(matcher.group(2));
             int bonus = matcher.group(3) != null ? Integer.parseInt(matcher.group(3)) : 0;
 
-            logger.info("Parsed dice: " + numDice + "d" + numSides + "+" + bonus);
+            logger.info("Parsed dice: " + numDice + "d" + numSides + (bonus >= 0 ? "+" : "") + bonus);
 
             return new int[]{numDice, numSides, bonus};
         } else {

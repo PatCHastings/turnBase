@@ -1,11 +1,13 @@
 package com.javaproject.turnbase.controller;
 
 import com.javaproject.turnbase.entity.Enemy;
+import com.javaproject.turnbase.entity.Monster;
 import com.javaproject.turnbase.repository.EnemyRepository;
 import com.javaproject.turnbase.service.EnemyService;
 import com.javaproject.turnbase.service.MonsterService;
 import com.javaproject.turnbase.util.AbilityScoreGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,10 +23,13 @@ public class EnemyController {
 
     @Autowired
     private EnemyRepository enemyRepository;
-
     @Autowired
     private EnemyService enemyService;
 
+
+
+    @Autowired
+    private MonsterService monsterService;
     private static final Logger logger = Logger.getLogger(CombatController.class.getName());
 
 
@@ -41,6 +46,26 @@ public class EnemyController {
     @PostMapping
     public Enemy createEnemy(@RequestBody Enemy enemy) {
         return enemyRepository.save(enemy);
+    }
+
+    @PostMapping("/generate-zero")
+    public ResponseEntity<?> generateEnemyWithChallengeRatingZero() {
+        try {
+            List<Monster> monsters = monsterService.getAllMonstersWithChallengeRating();
+
+            if (monsters.isEmpty()) {
+                throw new IllegalArgumentException("No monsters with challenge rating 0 found.");
+            }
+
+            Random random = new Random();
+            Monster selectedMonster = monsters.get(random.nextInt(monsters.size()));
+
+            Enemy createdEnemy = enemyService.createEnemyFromMonster(selectedMonster.getIndex());
+            return ResponseEntity.ok(createdEnemy);
+        } catch (Exception e) {
+            e.printStackTrace();  // This will print the error stack trace to the console
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
