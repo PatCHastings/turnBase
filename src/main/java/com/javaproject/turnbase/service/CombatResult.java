@@ -9,13 +9,17 @@ public class CombatResult {
     private int enemyHealth;
     private List<CombatActionResult> log;
     private boolean playerTurn;
+    private int playerExperience;
+    private int playerLevel;
 
 
-    public CombatResult(int playerHealth, int enemyHealth, List<CombatActionResult> log, boolean playerTurn) {
+    public CombatResult(int playerHealth, int enemyHealth, List<CombatActionResult> log, boolean playerTurn, int playerExperience, int playerlevel) {
         this.playerHealth = playerHealth;
         this.enemyHealth = enemyHealth;
         this.log = log;
         this.playerTurn = playerTurn;
+        this.playerExperience = playerExperience;
+        this.playerLevel = playerlevel;
     }
 
     public int getPlayerHealth() {
@@ -32,6 +36,38 @@ public class CombatResult {
 
     public boolean isPlayerTurn() {
         return playerTurn;
+    }
+
+    public void setPlayerHealth(int playerHealth) {
+        this.playerHealth = playerHealth;
+    }
+
+    public void setEnemyHealth(int enemyHealth) {
+        this.enemyHealth = enemyHealth;
+    }
+
+    public void setLog(List<CombatActionResult> log) {
+        this.log = log;
+    }
+
+    public void setPlayerTurn(boolean playerTurn) {
+        this.playerTurn = playerTurn;
+    }
+
+    public int getPlayerExperience() {
+        return playerExperience;
+    }
+
+    public void setPlayerExperience(int playerExperience) {
+        this.playerExperience = playerExperience;
+    }
+
+    public int getPlayerLevel() {
+        return playerLevel;
+    }
+
+    public void setPlayerLevel(int playerLevel) {
+        this.playerLevel = playerLevel;
     }
 }
 

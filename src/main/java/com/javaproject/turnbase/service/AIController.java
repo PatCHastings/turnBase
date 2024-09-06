@@ -16,7 +16,7 @@ public class AIController {
 
         if (target != null && target.getHealth() > 0) {
             // For now, the enemy just attacks
-            CombatActionResult attackResult = combatService.performAttack(enemy, target);
+            CombatActionResult attackResult = combatService.performAttack(enemy, target, combatLog);
             combatLog.add(attackResult);
         }
 

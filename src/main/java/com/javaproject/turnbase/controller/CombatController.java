@@ -41,7 +41,7 @@ public class CombatController {
 
             // Return a CombatResult with the error-specific CombatActionResult
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new CombatResult(0, 0, List.of(errorResult), false));
+                    .body(new CombatResult(0, 0, List.of(errorResult), false, 0, 0));
         }
     }
 

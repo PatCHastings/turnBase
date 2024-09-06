@@ -17,6 +17,7 @@ public class Player extends GameCharacter{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private int level;
+    private int experience;
     private String characterImage;
 
 
@@ -86,6 +87,20 @@ public class Player extends GameCharacter{
         this.level = level;
     }
 
+    public int getExperience() {
+        return experience;
+    }
 
+    public void setExperience(int experience) {
+        this.experience = experience;
+    }
 
+    public void addExperience(int exp) {
+        this.experience += exp;
+    }
+
+    // check if the player lvled up
+    public boolean hasLeveledUp() {
+        return this.experience >= 100;
+    }
 }

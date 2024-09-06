@@ -21,14 +21,16 @@ public class CombatService {
     private int currentTurnIndex;
     private final AttackAction attackAction;
     private boolean combatOngoing;
+    private PlayerExperienceService playerExperienceService;
 
     private static final Logger logger = Logger.getLogger(CombatController.class.getName());
 
     @Autowired
-    public CombatService(EnemyRepository enemyRepository, PlayerRepository playerRepository) {
+    public CombatService(EnemyRepository enemyRepository, PlayerRepository playerRepository, PlayerExperienceService playerExperienceService) {
         this.enemyRepository = enemyRepository;
         this.playerRepository = playerRepository;
         this.attackAction = new AttackAction(enemyRepository, playerRepository);
+        this.playerExperienceService = playerExperienceService;
     }
 
 
@@ -66,7 +68,9 @@ public class CombatService {
             combatLog.addAll(executeEnemyTurn((Enemy) currentCombatant));
         }
 
+        logger.info("Checking if combat ended...");
         if (checkCombatEnd()) {
+            logger.info("Combat has ended. Resolving combat.");
             combatOngoing = false;
             return resolveCombat(combatLog);
         }
@@ -74,12 +78,16 @@ public class CombatService {
         advanceTurn();
 
         boolean isPlayerTurn = combatants.get(currentTurnIndex) instanceof Player;
+        Player player = getCurrentPlayer();
 
+        logger.info("Processing next turn. Player turn: " + isPlayerTurn);
         return new CombatResult(
                 getCurrentPlayer().getHealth(),
                 getCurrentEnemy().getHealth(),
                 combatLog,
-                isPlayerTurn
+                isPlayerTurn,
+                player.getExperience(),
+                player.getLevel()
         );
     }
 
@@ -88,58 +96,77 @@ public class CombatService {
         GameCharacter enemy = enemyRepository.findById(enemyId).orElseThrow();
         List<CombatActionResult> combatLog = new ArrayList<>();
 
+        if (!(player instanceof Player)) {
+            throw new IllegalArgumentException("The provided playerId does not refer to a Player.");
+        }
+        Player actualPlayer = (Player) player;
+
         switch (actionType.toLowerCase()) {
             case "attack":
-                combatLog.add(performAttack(player, enemy));
+                combatLog.add(performAttack(player, enemy, combatLog));  // Pass combatLog here
                 break;
             case "defend":
-                //combatLog.add(performDefend(player));
+                // Add defend logic
                 break;
             case "use_item":
-                //combatLog.add(useItem(player, enemy));
+                // Add use item logic
                 break;
             case "use_skill":
-                //combatLog.add(useSkill(player, enemy));
+                // Add use skill logic
                 break;
             case "enemyaction":
-                // Add handling for enemy action
                 combatLog.addAll(executeEnemyTurn((Enemy) enemy));
                 break;
             default:
                 throw new IllegalArgumentException("Unknown action type: " + actionType);
         }
 
-        // Check if the combat ends after this action
-        if (checkCombatEnd()) {
-            return resolveCombat(combatLog);
-        }
-
-        // Determine the next turn
-        boolean nextTurnIsPlayer = actionType.equalsIgnoreCase("enemyaction");
-        advanceTurn();
-
-        // Log the health before returning the result
+        // Log the health after the action
         logger.info("Player Health after action: " + player.getHealth());
         logger.info("Enemy Health after action: " + enemy.getHealth());
 
-        return new CombatResult(player.getHealth(), enemy.getHealth(), combatLog, nextTurnIsPlayer);
+        // Check if combat has ended after the action
+        if (checkCombatEnd()) {
+            return resolveCombat(combatLog);  // Resolving the combat if it has ended
+        }
+
+        advanceTurn();
+        boolean nextTurnIsPlayer = actionType.equalsIgnoreCase("enemyaction");
+        Player currentPlayer = getCurrentPlayer(); // Use getCurrentPlayer()
+
+        return new CombatResult(currentPlayer.getHealth(), enemy.getHealth(), combatLog, nextTurnIsPlayer, currentPlayer.getExperience(), actualPlayer.getLevel());
     }
 
-    CombatActionResult performAttack(GameCharacter attacker, GameCharacter defender) {
+    private void updateCombatantHealth(GameCharacter combatant) {
+        for (int i = 0; i < combatants.size(); i++) {
+            GameCharacter existingCombatant = combatants.get(i);
+
+            // Check if the combatant is a Player or an Enemy and compare the IDs
+            if ((existingCombatant instanceof Player && combatant instanceof Player &&
+                    ((Player) existingCombatant).getId().equals(((Player) combatant).getId())) ||
+                    (existingCombatant instanceof Enemy && combatant instanceof Enemy &&
+                            ((Enemy) existingCombatant).getId().equals(((Enemy) combatant).getId()))) {
+                // Replace the combatant in the list with the updated one
+                combatants.set(i, combatant);
+                break;
+            }
+        }
+    }
+
+    CombatActionResult performAttack(GameCharacter attacker, GameCharacter defender, List<CombatActionResult> combatLog) {
         int attackRoll = attackAction.rollDice(20) + attacker.getStrengthModifier();
         int defenderArmorClass = getArmorClass(defender);
 
         Long attackerId = null;
         Long defenderId = null;
 
-        // Get attacker ID
+        // Get attacker and defender IDs
         if (attacker instanceof Player) {
             attackerId = ((Player) attacker).getId();
         } else if (attacker instanceof Enemy) {
             attackerId = ((Enemy) attacker).getId();
         }
 
-        // Get defender ID
         if (defender instanceof Player) {
             defenderId = ((Player) defender).getId();
         } else if (defender instanceof Enemy) {
@@ -149,6 +176,34 @@ public class CombatService {
         if (attackRoll >= defenderArmorClass) {
             int damage = attackAction.calculateDamage(attacker);
             defender.setHealth(Math.max(defender.getHealth() - damage, 0));
+
+            // Ensure health changes are reflected in the combatants list
+            updateCombatantHealth(defender);
+
+            // Check if defender is an enemy and update accordingly
+            if (defender instanceof Enemy) {
+                Enemy enemy = (Enemy) defender;
+
+                // Ensure enemy's health does not go below 0
+                if (enemy.getHealth() <= 0) {
+                    enemy.setHealth(0);
+                    enemyRepository.save(enemy);  // Persist the update
+
+                    // Log enemy defeat and end combat if necessary
+                    logger.info("Enemy defeated: " + enemy.getName() + " has 0 health.");
+
+                    // Add defeat result to combat log
+                    combatLog.add(new CombatActionResult(attackerId, defenderId, damage, attacker.getName() + " has defeated " + defender.getName() + "!"));
+
+                    return new CombatActionResult(
+                            attackerId,
+                            defenderId,
+                            damage,
+                            attacker.getName() + " hits " + defender.getName() + " for " + damage + " damage!"
+                    );
+                }
+            }
+
             saveCharacter(defender);
 
             return new CombatActionResult(
@@ -186,16 +241,14 @@ public class CombatService {
 
     private List<CombatActionResult> executeEnemyTurn(Enemy enemy) {
         List<CombatActionResult> combatLog = new ArrayList<>();
-
         // For now, enemy only attacks player
         // future implementation: add AI logic to choose different actions.
 
         Player player = getCurrentPlayer();
         if (player != null && player.getHealth() > 0) {
-            CombatActionResult attackResult = performAttack(enemy, player);
+            CombatActionResult attackResult = performAttack(enemy, player, combatLog);
             combatLog.add(attackResult);
         }
-
         return combatLog;
     }
 
@@ -208,29 +261,71 @@ public class CombatService {
     }
 
     private boolean checkCombatEnd() {
+        // Log all combatants and their health
+        logger.info("Logging all combatants' health:");
+
+        combatants.forEach(c -> {
+            String type = c instanceof Player ? "Player" : "Enemy";
+            logger.info(type + " health: " + c.getHealth());
+        });
+
+        // Check if all players are defeated (health <= 0)
         boolean allPlayersDefeated = combatants.stream()
                 .filter(c -> c instanceof Player)
-                .allMatch(c -> c.getHealth() <= 0);
+                .allMatch(c -> {
+                    logger.info("Checking player health: " + c.getHealth());
+                    return c.getHealth() <= 0;
+                });
 
+        // Check if all enemies are defeated (health <= 0)
         boolean allEnemiesDefeated = combatants.stream()
                 .filter(c -> c instanceof Enemy)
-                .allMatch(c -> c.getHealth() <= 0);
+                .allMatch(c -> {
+                    logger.info("Checking enemy health: " + c.getHealth());
+                    return c.getHealth() <= 0;
+                });
 
+        logger.info("All players defeated: " + allPlayersDefeated);
+        logger.info("All enemies defeated: " + allEnemiesDefeated);
+
+        // Combat ends if all players or all enemies are defeated
         return allPlayersDefeated || allEnemiesDefeated;
     }
 
     private CombatResult resolveCombat(List<CombatActionResult> combatLog) {
-        String result = combatants.stream()
-                .anyMatch(c -> c instanceof Player && c.getHealth() > 0)
-                ? "Player wins!"
-                : "Enemy wins!";
+        Player player = getCurrentPlayer();
+        Enemy enemy = getCurrentEnemy();
+
+        logger.info("Player health: " + player.getHealth());
+        logger.info("Enemy health: " + enemy.getHealth());
+
+        boolean playerWins = combatants.stream()
+                .anyMatch(c -> c instanceof Enemy && c.getHealth() <= 0);
+
+        boolean enemyWins = combatants.stream()
+                .anyMatch(c -> c instanceof Player && c.getHealth() <= 0);
+
+        String result;
+        if (playerWins) {
+            result = "Player wins!";
+            playerExperienceService.grantExperience(player, enemy);  // Grant experience if player wins
+            logger.info("exp gained: " + player.getExperience());
+        } else if (enemyWins) {
+            result = "Enemy wins!";
+        } else {
+            result = "Ongoing";
+        }
 
         combatLog.add(new CombatActionResult(null, null, 0, result));
+        logger.info("Combat result: " + result);
+
         return new CombatResult(
-                getCurrentPlayer().getHealth(),
-                getCurrentEnemy().getHealth(),
+                player.getHealth(),
+                enemy.getHealth(),
                 combatLog,
-                false
+                false,
+                player.getExperience(),// Combat has ended
+                player.getLevel() // Pass player's experience here
         );
     }
 
